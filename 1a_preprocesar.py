@@ -7,14 +7,14 @@ import requests
 import ast
 import json
 from concurrent.futures import ThreadPoolExecutor
-from tqdm.notebook import tqdm  # Para mostrar barras de progreso en entornos tipo Jupyter o Colab
+from tqdm.notebook import tqdm
 from PIL import Image
 from io import BytesIO
 
 # Habilita el uso de tqdm en funciones apply de pandas
 tqdm.pandas()
 
-# Carga del DataFrame con reseñas
+# Carga del DataFrame con reseñas (que es el archivo pikle a usar)
 reviews = pd.read_pickle("/content/reviews.pkl")
 
 # Filtra solo las reseñas que contienen al menos una imagen
@@ -41,7 +41,7 @@ def extract_url(item):
                 return None
     return None
 
-# Función que comprueba si una URL apunta a una imagen accesible y válida
+# Función que comprueba si una URL apunta a una imagen accesible y válida (ya que algunas resultan inválidas en el momento de hacer el TFG)
 def is_url_accessible(url):
     """
     Verifica si la URL responde con código 200 y si su contenido puede abrirse como una imagen válida.
@@ -58,7 +58,7 @@ def is_url_accessible(url):
     except:
         return False
 
-# Procesa cada lista de imágenes en una reseña, manteniendo solo las que son válidas
+# Función que procesa cada lista de imágenes en una reseña, manteniendo solo las que son válidas
 def clean_image_list_with_progress(image_items):
     """
     Extrae las URLs de las imágenes de una reseña, verifica su validez y devuelve una lista filtrada.
@@ -80,20 +80,19 @@ reviews_with_images['images'] = reviews_with_images['images'].progress_apply(cle
 # Elimina reseñas que no conservan imágenes válidas tras el filtrado
 reviews_clean = reviews_with_images[reviews_with_images['images'].apply(lambda imgs: len(imgs) > 0)].copy()
 
-# Selecciona las columnas más relevantes
+# Selecciona las columnas más relevantes (las que se usarán para hacer la tarea de recomendación)
 cols_to_keep = ['images', 'rating', 'restaurantId', 'reviewId', 'text', 'userId']
 reviews_filtered = reviews_clean[cols_to_keep].copy()
 
-# Reasigna los identificadores de usuarios y restaurantes a enteros consecutivos
+# Reasigna los identificadores de usuarios y restaurantes a enteros consecutivos (con pd.factorize)
 reviews_filtered['user_id_new'] = pd.factorize(reviews_filtered['userId'])[0]
 reviews_filtered['restaurant_id_new'] = pd.factorize(reviews_filtered['restaurantId'])[0]
 
-# Guarda el conjunto de datos procesado en formato CSV y Pickle
+# Guarda el conjunto de datos procesado en formato CSV (para visualización más cómoda si se quiere) y Pickle
 reviews_filtered.to_csv("reviews_with_clean_images_strict.csv", index=False)
 reviews_filtered.to_pickle("reviews_with_clean_images_strict.pkl")
 
 # Muestra información final para verificación
-print("\n✅ Limpieza completada.")
 print("Primeras filas tras limpieza:")
 print(reviews_filtered.head())
 print("\nCantidad de usuarios:", reviews_filtered['user_id_new'].nunique())
